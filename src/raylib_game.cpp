@@ -302,7 +302,7 @@ static void update_draw_frame(void)
     //----------------------------------------------------------------------------------
     BeginDrawing();
 
-        ClearBackground(RAYWHITE);
+        ClearBackground(GRAY);
 
         switch(currentScreen)
         {

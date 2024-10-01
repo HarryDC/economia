@@ -41,6 +41,7 @@ extern Sound fxCoin;
 extern Model g_models[];
 
 enum Models {
+    MODEL_NONE = -1,
     MODEL_HOUSE,
     MODEL_FARM,
     MODEL_MARKET,
