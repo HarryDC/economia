@@ -19,6 +19,7 @@
     #include <emscripten/emscripten.h>
 #endif
 #include <crtdbg.h>
+#include "assets.hpp"
 
 //----------------------------------------------------------------------------------
 // Shared Variables Definition (global)
@@ -28,7 +29,8 @@ GameScreen currentScreen = LOGO;
 Font font = { 0 };
 Music music = { 0 };
 Sound fxCoin = { 0 };
-Model g_models[MODEL_COUNT];
+
+Model *g_buildings;
 
 //----------------------------------------------------------------------------------
 // Local Variables Definition (local to this module)
@@ -54,22 +56,6 @@ static void draw_transition(void);           // Draw transition effect (full-scr
 
 static void update_draw_frame(void);          // Update and draw one frame
 
-static const char* _model_names[MODEL_COUNT] = {
-"building-market.glb",
-"building-farm.glb",
-"building-house.glb",
-};
-
-
-
-void load_models(Model models[], const char* names[], int name_count)
-{
-    char buffer[1024];
-    for (int i = 0; i < name_count; ++i) {
-        const char* filename = TextFormat("resources/hex/%s", names[i]);
-        models[i] = LoadModel(filename);
-    }
-}
 
 void unload_models(Model models[], int model_count) {
     for (int i = 0; i < model_count; ++i) {
@@ -88,7 +74,7 @@ int main(void)
 
     InitAudioDevice();      // Initialize audio device
 
-    load_models(g_models, _model_names, MODEL_COUNT);
+    g_buildings = models_load_buildings();
 
     // Load global data (assets that must be available in all screens, i.e. font)
     // font = LoadFont("resources/mecha.png");

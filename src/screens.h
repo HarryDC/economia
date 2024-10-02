@@ -31,6 +31,12 @@
 //----------------------------------------------------------------------------------
 typedef enum GameScreen { UNKNOWN = -1, LOGO = 0, TITLE, OPTIONS, GAMEPLAY, ENDING } GameScreen;
 
+struct GameModels {
+    Model* tiles;
+    Model* roads;
+    Model* rivers;
+};
+
 //----------------------------------------------------------------------------------
 // Global Variables Declaration (shared by several modules)
 //----------------------------------------------------------------------------------
@@ -38,16 +44,8 @@ extern GameScreen currentScreen;
 extern Font font;
 extern Music music;
 extern Sound fxCoin;
-extern Model g_models[];
 
-enum Models {
-    MODEL_NONE = -1,
-    MODEL_HOUSE,
-    MODEL_FARM,
-    MODEL_MARKET,
-    MODEL_COUNT
-};
-
+extern Model *g_buildings;
 
 #ifdef __cplusplus
 extern "C" {            // Prevents name mangling of functions

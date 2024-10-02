@@ -26,6 +26,9 @@
 #include "raylib.h"
 #include "raymath.hpp"
 #include "screens.h"
+#include "assets.hpp"
+#include "economy.hpp"
+
 #include <crtdbg.h>
 #include <assert.h>
 
@@ -34,6 +37,10 @@
 //----------------------------------------------------------------------------------
 static int framesCounter = 0;
 static int finishScreen = 0;
+
+static int _editor_tiles[ECONOMY_TILE_COUNT * 2] = {
+    ECONOMY_TILE_FARM, MODEL_BUILDING_FARM
+};
 
 
 enum Actions {
@@ -68,41 +75,45 @@ struct Cursor {
 struct Game {
     float dt;
     Cursor cursor;
+    Economy* economy;
 };
 
-static constexpr int board_size = 7;
-static Tile _tiles[board_size][board_size] = {0};
+static constexpr int _board_size = 7;
+static Tile _tiles[_board_size][_board_size] = {0};
+
+static const float _size = 1.0f / sqrtf(3.0);
+static Vector3 _origin;
+
 
 Game _game;
-Vector3 _origin;
 // For hex functions see https://www.redblobgames.com/grids/hexagons/
 
 
 struct Layout {
-    Vector2 origin;
+    Vector2 _origin;
     
 };
 
-Vector2 flat_hex_to_pixel(int q, int r, float size) 
+Vector2 flat_hex_to_pixel(int q, int r, float _size) 
 {
-    float x = size * (3. / 2 * q);
-    float y = size * (sqrt(3) / 2 * q + sqrt(3) * r);
+    float x = _size * (3. / 2 * q);
+    float y = _size * (sqrt(3) / 2 * q + sqrt(3) * r);
     return Vector2(x, y);
 }
 
 
-constexpr Vector3 pointy_hex_to_pixel(int q, int r, float size)
+constexpr Vector3 pointy_hex_to_pixel(int q, int r, float _size)
 {
     constexpr float sqrt3 = 1.73205080757;
-    float x = size * (sqrt3 * q + sqrt3 / 2 * r);
-    float y = size * (3. / 2 * r);
+    float x = _size * (sqrt3 * q + sqrt3 / 2 * r);
+    float y = _size * (3. / 2 * r);
     return Vector3(x, 0, y);
 }
 
-void draw_coords(Vector3 origin, float size = 1) {
-    DrawLine3D(origin, origin + Vector3(size, 0, 0), RED);
-    DrawLine3D(origin, origin + Vector3(0, size, 0), GREEN);
-    DrawLine3D(origin, origin + Vector3(0, 0, size), BLUE);
+void draw_coords(Vector3 _origin, float _size = 1) {
+    DrawLine3D(_origin, _origin + Vector3(_size, 0, 0), RED);
+    DrawLine3D(_origin, _origin + Vector3(0, _size, 0), GREEN);
+    DrawLine3D(_origin, _origin + Vector3(0, 0, _size), BLUE);
 }
 
 void process_input(Camera3D* camera, float dt)
@@ -116,16 +127,16 @@ void process_input(Camera3D* camera, float dt)
     int key = GetKeyPressed();
     switch (key) {
     case ACTION_CURSOR_LEFT:
-        cursor.hex.q = (cursor.hex.q - 1 + board_size) % board_size;
+        cursor.hex.q = (cursor.hex.q - 1 + _board_size) % _board_size;
         break;
     case ACTION_CURSOR_RIGHT:
-        cursor.hex.q = (cursor.hex.q + 1) % board_size;
+        cursor.hex.q = (cursor.hex.q + 1) % _board_size;
         break;
     case ACTION_CURSOR_UP:
-        cursor.hex.r = (cursor.hex.r - 1 + board_size) % board_size;
+        cursor.hex.r = (cursor.hex.r - 1 + _board_size) % _board_size;
         break;
     case ACTION_CURSOR_DOWN:
-        cursor.hex.r = (cursor.hex.r + 1) % board_size;
+        cursor.hex.r = (cursor.hex.r + 1) % _board_size;
         break;
     case ACTION_ROTATE_LEFT:
         cursor.tile.rotation = (cursor.tile.rotation + 1) % 6;
@@ -135,6 +146,7 @@ void process_input(Camera3D* camera, float dt)
         break;
     case ACTION_PLACE:
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
+        economy_add_tile(_game.economy, cursor.hex.q, cursor.hex.r, cursor.tile.type);
     }
     if (_game.cursor.hex.q != cursor.hex.q || _game.cursor.hex.r != cursor.hex.r) {
         Vector3 coords = pointy_hex_to_pixel(cursor.hex.q, cursor.hex.r, 1.0f);
@@ -161,30 +173,48 @@ void init_gameplay_screen(void)
         .fovy = 30.0f, .projection = CAMERA_PERSPECTIVE };
 
     _game.cursor.hex = Hex{ 0,0 };
-    _game.cursor.tile.type = MODEL_FARM;
+    _game.cursor.tile.type = ECONOMY_TILE_FARM;
     _game.cursor.tile.rotation = 0;
 
-    for (int i = 0; i < 7; ++i) {
-        for (int j = 0; j < 7; ++j) {
+    for (int i = 0; i < _board_size; ++i) {
+        for (int j = 0; j < _board_size; ++j) {
             _tiles[i][j].type = -1;
             _tiles[i][j].rotation = 0;
         }
     }
+
+    _game.economy = economy_create(_board_size, _board_size);
+    _origin = pointy_hex_to_pixel(-3, -3, _size);
 }
 
 // Gameplay Screen Update logic
 void update_gameplay_screen(void)
 {
     process_input(&_camera, GetFrameTime());
+    economy_update(_game.economy, GetFrameTime());
+
+    if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
+        TraceLog(LOG_INFO, economy_get_tile_info(_game.economy,  
+            _game.cursor.hex.q, _game.cursor.hex.r));
+    }
 
     // TODO: Update GAMEPLAY screen variables here!
 
     // Press enter or tap to change to ENDING screen
-    if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+    if (IsKeyPressed(KEY_ENTER))
     {
         finishScreen = 1;
         PlaySound(fxCoin);
     }
+
+}
+
+void draw_tile(Tile tile, int q, int r, Color color)
+{
+    if (tile.type == -1) return;
+    const Vector3 pos = pointy_hex_to_pixel(q, r, _size) + _origin;
+    DrawModelEx(g_buildings[_editor_tiles[tile.type*2 + 1]], 
+        pos, Vector3{ 0,1,0 }, 60.0f * tile.rotation, Vector3{ 1, 1, 1 }, WHITE);
 }
 
 // Gameplay Screen Draw logic
@@ -194,29 +224,22 @@ void draw_gameplay_screen(void)
     static int q_start[7] = { 0, -1, -2, -3, -3, -3, -3 };
     int r = -3;
 
-    const float size = 1.0f / sqrtf(3.0);
-    const Vector3 origin = pointy_hex_to_pixel(-3, -3, size);
 
     // TODO: Draw GAMEPLAY screen here!
     //DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), PURPLE);
     BeginMode3D(_camera);
     draw_coords(Vector3{ 0,0,0 });
-    for (int q = 0; q < board_size; ++q) {
-        for (int r = 0; r < board_size; ++r)
+    for (int q = 0; q < _board_size; ++q) {
+        for (int r = 0; r < _board_size; ++r)
         {
-            const Vector3 pos = pointy_hex_to_pixel(q , r, size) + origin;
-            Tile tile = _tiles[q][r];
-            if (tile.type != -1) {
-                DrawModelEx(g_models[tile.type], pos, Vector3{ 0,1,0 }, 60.0f * tile.rotation, Vector3{ 1, 1, 1 }, WHITE);
-            }
+            draw_tile(_tiles[q][r], q, r, WHITE);
         }
     }
 
-    const Vector3 pos  = pointy_hex_to_pixel(_game.cursor.hex.q, _game.cursor.hex.r, size) + origin;
+    const Vector3 pos  = pointy_hex_to_pixel(_game.cursor.hex.q, _game.cursor.hex.r, _size) + _origin;
 
     if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type == -1) {
-        const Cursor cursor = _game.cursor;
-        DrawModelEx(g_models[cursor.tile.type], pos, Vector3{ 0,1,0 }, 60.0f * cursor.tile.rotation, Vector3{ 1, 1, 1 }, Color(255,255,255,128));
+        draw_tile(_game.cursor.tile, _game.cursor.hex.q, _game.cursor.hex.r, Color(255, 255, 255, 128));
     }
     else {
         DrawCubeWires(pos, 1, 1, 1, BLUE);
@@ -227,6 +250,7 @@ void draw_gameplay_screen(void)
 // Gameplay Screen Unload logic
 void unload_gameplay_screen(void)
 {
+    economy_destroy(_game.economy);
 }
 
 // Gameplay Screen should finish?
