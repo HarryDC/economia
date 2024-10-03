@@ -1,5 +1,9 @@
 #pragma once
 
+/* 
+Assets, this is responsible for managing the assets of the games, these are all models, textures, fonts etc 
+*/
+
 struct Model;
 
 enum ModelType {

@@ -27,7 +27,7 @@
 #include "raymath.hpp"
 #include "screens.h"
 #include "assets.hpp"
-#include "economy.hpp"
+#include "world.hpp"
 
 #include <crtdbg.h>
 #include <assert.h>
@@ -140,7 +140,7 @@ void process_input(Camera3D* camera, float dt)
         break;
     case ACTION_PLACE:
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
-        world_add_tile(_game.world, cursor.hex.q, cursor.hex.r, cursor.tile);
+        world_add_tile(_game.world, cursor.tile, cursor.hex.q, cursor.hex.r);
     }
     if (_game.cursor.hex.q != cursor.hex.q || _game.cursor.hex.r != cursor.hex.r) {
         Vector3 coords = pointy_hex_to_pixel(cursor.hex.q, cursor.hex.r, 1.0f);

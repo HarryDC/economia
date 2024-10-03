@@ -1,4 +1,8 @@
 #pragma once
+/*
+This is responsible for managing and trackign the world state
+
+*/
 
 enum Good {
     GOOD_NONE = -1,

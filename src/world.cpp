@@ -33,6 +33,13 @@ Tile* world_get_tile(World* w, int q, int r) {
     else return &w->tiles[q * w->max_r + r];
 }
 
+// To think about:
+// various types of production
+// Continous: draw resources from storage and make the product
+// With phased things like growing wheat the phases can be done on the
+// supply side, only when the growing cycle is done does the good get added
+// Work Power ... if more people are on the tile production should be per person
+
 static void world_update_production(World* world, float dt) {
     for (int i = 0; i < world->tile_count; ++i) {
         bool doWork = true;
