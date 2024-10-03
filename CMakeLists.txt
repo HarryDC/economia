@@ -18,7 +18,17 @@ FetchContent_Declare(
     URL https://github.com/raysan5/raylib/archive/ae50bfa2cc569c0f8d5bc4315d39db64005b1b08.zip # v 5.0
     FIND_PACKAGE_ARGS
 )
-FetchContent_MakeAvailable(raylib)
+
+FetchContent_Declare(
+    raygui
+    DOWNLOAD_EXTRACT_TIMESTAMP OFF
+    GIT_REPOSITORY https://github.com/raysan5/raygui.git
+    SOURCE_SUBDIR projects/CMake
+    FIND_PACKAGE_ARGS
+)
+
+
+FetchContent_MakeAvailable(raylib raygui)
 
 # Our Project
 add_executable(${PROJECT_NAME})
@@ -44,7 +54,7 @@ else()
 endif()
 
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} raylib raygui)
 
 # Web Configurations
 if ("${PLATFORM}" STREQUAL "Web")

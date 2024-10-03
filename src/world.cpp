@@ -102,6 +102,17 @@ void world_add_tile(World* world, Tile tile, int q, int r)
         t->model_type = MODEL_BUILDING_FARM;
         t->production[GOOD_WHEAT] = 1.0;
         t->supplyMax[GOOD_WHEAT] = 100.0;
+        break;
+    }
+    case (ECONOMY_TILE_FOREST): {
+        t->model_type = MODEL_BUILDING_FOREST;
+        t->production[GOOD_WOOD] = 1.0;
+        t->supplyMax[GOOD_WOOD] = 100.0;
+        break;
+    }
+    case (ECONOMY_TILE_HOUSE): {
+        t->model_type = MODEL_BUILDING_HOUSE;
+        // Add a person 
     }
     }
 }

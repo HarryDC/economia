@@ -16,8 +16,8 @@
 
 static const char* _building_names[MODEL_BUILDING_COUNT] = {
 "building-farm.glb",
-"building-market.glb",
 "building-house.glb",
+"grass-forest.glb",
 };
 
 static const char* resource_dir = "resources/";

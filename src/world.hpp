@@ -14,6 +14,8 @@ enum Good {
 enum TileType {
     ECONOMY_TILE_NONE = -1,
     ECONOMY_TILE_FARM,
+    ECONOMY_TILE_HOUSE,
+    ECONOMY_TILE_FOREST,
     ECONOMY_TILE_COUNT
 };
 

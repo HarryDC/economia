@@ -25,6 +25,8 @@
 
 #include "raylib.h"
 #include "raymath.hpp"
+#include "raygui.h"
+
 #include "screens.h"
 #include "assets.hpp"
 #include "world.hpp"
@@ -38,8 +40,11 @@
 static int framesCounter = 0;
 static int finishScreen = 0;
 
+// Duplicated
 static int _editor_tiles[ECONOMY_TILE_COUNT * 2] = {
-    ECONOMY_TILE_FARM, MODEL_BUILDING_FARM
+    ECONOMY_TILE_FARM, MODEL_BUILDING_FARM,
+    ECONOMY_TILE_HOUSE, MODEL_BUILDING_HOUSE,
+    ECONOMY_TILE_FOREST, MODEL_BUILDING_FOREST,
 };
 
 
@@ -51,9 +56,11 @@ enum Actions {
     ACTION_ROTATE_LEFT = KEY_E,
     ACTION_ROTATE_RIGHT = KEY_Q,
     ACTION_PLACE = KEY_SPACE,
+    ACTION_NEXT_TILE = KEY_W,
 };
 
-Camera3D _camera = { 0 };
+Camera3D _camera3D = { 0 };
+Camera2D _camera2D = { 0 };
 
 struct Hex {
     int r;
@@ -138,6 +145,9 @@ void process_input(Camera3D* camera, float dt)
     case ACTION_ROTATE_RIGHT:
         cursor.tile.rotation = (cursor.tile.rotation - 1 + 6) % 6;
         break;
+    case ACTION_NEXT_TILE:
+        cursor.tile.type = (cursor.tile.type + 1) % ECONOMY_TILE_COUNT;
+        break;
     case ACTION_PLACE:
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
         world_add_tile(_game.world, cursor.tile, cursor.hex.q, cursor.hex.r);
@@ -163,8 +173,11 @@ void init_gameplay_screen(void)
     framesCounter = 0;
     finishScreen = 0;
 
-    _camera = Camera3D{ .position = Vector3 { 0, 10, 10}, .target = Vector3 {0,0,0}, .up = Vector3{0,1,0},
+    _camera3D = Camera3D{ .position = Vector3 { 0, 10, 10}, .target = Vector3 {0,0,0}, .up = Vector3{0,1,0},
         .fovy = 30.0f, .projection = CAMERA_PERSPECTIVE };
+
+    _camera2D = { 0 };
+    _camera2D.zoom = 1.0;
 
     _game.cursor.hex = Hex{ 0,0 };
     _game.cursor.tile.type = ECONOMY_TILE_FARM;
@@ -184,13 +197,13 @@ void init_gameplay_screen(void)
 // Gameplay Screen Update logic
 void update_gameplay_screen(void)
 {
-    process_input(&_camera, GetFrameTime());
+    process_input(&_camera3D, GetFrameTime());
     world_update(_game.world, GetFrameTime());
 
-    if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
-        TraceLog(LOG_INFO, world_get_tile_info(_game.world,  
-            _game.cursor.hex.q, _game.cursor.hex.r));
-    }
+    //if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
+    //    TraceLog(LOG_INFO, world_get_tile_info(_game.world,  
+    //        _game.cursor.hex.q, _game.cursor.hex.r));
+    //}
 
     // TODO: Update GAMEPLAY screen variables here!
 
@@ -201,6 +214,28 @@ void update_gameplay_screen(void)
         PlaySound(fxCoin);
     }
 
+}
+
+// Draw the information panel for a tile
+void draw_hud_tile_info(Vector3 pos, int q, int r) {
+    char buffer[1024] = { 0 };
+    Tile* t = world_get_tile(_game.world, q, r);
+    Vector2 pos2DTest = GetWorldToScreen(Vector3{ 0,0,0 }, _camera3D);
+    Vector2 pos2D = GetWorldToScreen(pos, _camera3D);
+    const float width = 200;
+    const float height = 60;
+    Rectangle rect = { .x = pos2D.x - width / 2, .y = pos2D.y - height * 1.3f,
+                       .width = width, .height = height };
+
+    GuiPanel(rect,"Information");
+    int end = 0;
+    TextAppend(buffer, "Goods:\n", &end);
+    TextAppend(buffer, TextFormat("%d", (int)t->supply[0]), &end);
+    for (int i = 1; i < GOOD_COUNT; ++i) {
+        TextAppend(buffer, TextFormat("/%d", (int)t->supply[i]), &end);
+    }
+    rect.y += 15; // Panel bar
+    GuiTextBox(rect, buffer, 12, false);
 }
 
 void draw_tile(int type, int rotation, int q, int r, Color color)
@@ -221,7 +256,7 @@ void draw_gameplay_screen(void)
 
     // TODO: Draw GAMEPLAY screen here!
     //DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), PURPLE);
-    BeginMode3D(_camera);
+    BeginMode3D(_camera3D);
     draw_coords(Vector3{ 0,0,0 });
     for (int q = 0; q < _board_size; ++q) {
         for (int r = 0; r < _board_size; ++r)
@@ -241,6 +276,14 @@ void draw_gameplay_screen(void)
         DrawCubeWires(pos, 1, 1, 1, BLUE);
     }
     EndMode3D();
+    // Draw the HUB on top of the game screen
+    BeginMode2D(_camera2D);
+
+    if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
+        draw_hud_tile_info(pos, _game.cursor.hex.q, _game.cursor.hex.r);
+    }
+
+    EndMode2D();
 }
 
 // Gameplay Screen Unload logic

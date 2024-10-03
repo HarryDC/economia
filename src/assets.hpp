@@ -2,6 +2,7 @@
 
 /* 
 Assets, this is responsible for managing the assets of the games, these are all models, textures, fonts etc 
+ 
 */
 
 struct Model;
@@ -10,7 +11,7 @@ enum ModelType {
     MODEL_BUILDING_NONE = -1,
     MODEL_BUILDING_FARM,
     MODEL_BUILDING_HOUSE,
-    MODEL_BUILDING_MARKET,
+    MODEL_BUILDING_FOREST,
     MODEL_BUILDING_COUNT
 };
 
