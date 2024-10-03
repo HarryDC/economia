@@ -1,4 +1,4 @@
-#include "economy.hpp"
+#include "world.hpp"
 #include "assets.hpp"
 
 #include "raylib.h"
@@ -6,37 +6,37 @@
 
 #include <stdlib.h>
 
-static EconomicTile* economy_get_tile(Economy* e, int q, int r) {
-    if (q < 0 || q >= e->max_q || r < 0 || r >= e->max_r) {
+World* world_create(int board_max_q, int board_max_r) 
+{
+    World *w = (World*)calloc(1, sizeof(World));
+    if (w == nullptr) return w;
+    w->max_q = board_max_q;
+    w->max_r = board_max_r;
+    w->tile_count = board_max_q * board_max_r;
+    w->tiles = (Tile*)calloc(board_max_q * board_max_r, sizeof(Tile));
+    for (int i = 0; i < w->tile_count; ++i) {
+        w->tiles[i].type = ECONOMY_TILE_NONE;
+    }
+    return w;
+}
+
+void world_destroy(World* world) {
+    free(world->tiles);
+    free(world);
+}
+
+Tile* world_get_tile(World* w, int q, int r) {
+    if (q < 0 || q >= w->max_q || r < 0 || r >= w->max_r) {
         TraceLog(LOG_ERROR, "Invalid tile access %d/%d", q, r);
         return nullptr;
     }
-    else return &e->tiles[q * e->max_r + r];
+    else return &w->tiles[q * w->max_r + r];
 }
 
-Economy* economy_create(int board_max_q, int board_max_r) 
-{
-    Economy *e = (Economy*)calloc(1, sizeof(Economy));
-    if (e == nullptr) return e;
-    e->max_q = board_max_q;
-    e->max_r = board_max_r;
-    e->tile_count = board_max_q * board_max_r;
-    e->tiles = (EconomicTile*)calloc(board_max_q * board_max_r, sizeof(EconomicTile));
-    for (int i = 0; i < e->tile_count; ++i) {
-        e->tiles[i].type = ECONOMY_TILE_NONE;
-    }
-    return e;
-}
-
-void economy_destroy(Economy* economy) {
-    free(economy->tiles);
-    free(economy);
-}
-
-static void update_production(Economy* economy, float dt) {
-    for (int i = 0; i < economy->tile_count; ++i) {
+static void world_update_production(World* world, float dt) {
+    for (int i = 0; i < world->tile_count; ++i) {
         bool doWork = true;
-        EconomicTile* t = &economy->tiles[i];
+        Tile* t = &world->tiles[i];
         if (t->type == ECONOMY_TILE_NONE) continue;
 
         for (int g = 0; g < GOOD_COUNT; ++g) {
@@ -56,9 +56,9 @@ static void update_production(Economy* economy, float dt) {
     }
 }
 
-const char* economy_get_tile_info(Economy* e,int q, int r) {
+const char* world_get_tile_info(World* e,int q, int r) {
     static char buffer[1024] = { 0 };
-    EconomicTile* t = economy_get_tile(e, q, r);
+    Tile* t = world_get_tile(e, q, r);
     if (t == nullptr) return "INVALID TILE";
     else {
         int end = 0;
@@ -70,13 +70,13 @@ const char* economy_get_tile_info(Economy* e,int q, int r) {
     return buffer;
 }
 
-void economy_update(Economy* economy, float dt)
+void world_update(World* world, float dt)
 {
     bool doWork = true;
-    update_production(economy, dt);
+    world_update_production(world, dt);
 }
 
-void economy_add_tile(Economy* world, int q, int r, int type)
+void world_add_tile(World* world, Tile tile, int q, int r)
 {
     int index = q * world->max_r + r; 
     if (index < 0 || index >= world->tile_count) {
@@ -84,12 +84,13 @@ void economy_add_tile(Economy* world, int q, int r, int type)
         return;
     }
     
-    EconomicTile* t = economy_get_tile(world, q, r);
+    Tile* t = world_get_tile(world, q, r);
     if (t == nullptr) return;
 
-    t->type = type;
+    t->type = tile.type;
+    t->rotation = tile.rotation;
 
-    switch (type) {
+    switch (t->type) {
     case (ECONOMY_TILE_FARM): {
         t->model_type = MODEL_BUILDING_FARM;
         t->production[GOOD_WHEAT] = 1.0;
@@ -98,7 +99,7 @@ void economy_add_tile(Economy* world, int q, int r, int type)
     }
 }
 
-void economictile_clear(EconomicTile* tile) {
+void tile_clear(Tile* tile) {
     // Clear all data from a tile, e.g. when it's deleted 
 }
 

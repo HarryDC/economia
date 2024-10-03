@@ -23,8 +23,7 @@
 *
 **********************************************************************************************/
 
-#ifndef SCREENS_H
-#define SCREENS_H
+#pragma once
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -99,5 +98,3 @@ int finish_ending_screen(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif // SCREENS_H

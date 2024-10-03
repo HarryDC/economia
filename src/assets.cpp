@@ -1,4 +1,7 @@
 #include "assets.hpp"
+
+#include "raylib.h"
+
 #include <stdlib.h>
 
 static const char* _building_names[MODEL_BUILDING_COUNT] = {

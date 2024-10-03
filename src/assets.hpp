@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raylib.h>
+struct Model;
 
 enum ModelType {
     MODEL_BUILDING_NONE = -1,

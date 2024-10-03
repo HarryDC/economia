@@ -60,12 +60,6 @@ struct Hex {
     int q;
 };
 
-struct Tile {
-    int type;
-    int surface_type; // Could be any number of road types
-    int rotation;
-};
-
 struct Cursor {
     Hex hex;
     Tile tile;
@@ -75,7 +69,7 @@ struct Cursor {
 struct Game {
     float dt;
     Cursor cursor;
-    Economy* economy;
+    World* world;
 };
 
 static constexpr int _board_size = 7;
@@ -146,7 +140,7 @@ void process_input(Camera3D* camera, float dt)
         break;
     case ACTION_PLACE:
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
-        economy_add_tile(_game.economy, cursor.hex.q, cursor.hex.r, cursor.tile.type);
+        world_add_tile(_game.world, cursor.hex.q, cursor.hex.r, cursor.tile);
     }
     if (_game.cursor.hex.q != cursor.hex.q || _game.cursor.hex.r != cursor.hex.r) {
         Vector3 coords = pointy_hex_to_pixel(cursor.hex.q, cursor.hex.r, 1.0f);
@@ -183,7 +177,7 @@ void init_gameplay_screen(void)
         }
     }
 
-    _game.economy = economy_create(_board_size, _board_size);
+    _game.world = world_create(_board_size, _board_size);
     _origin = pointy_hex_to_pixel(-3, -3, _size);
 }
 
@@ -191,10 +185,10 @@ void init_gameplay_screen(void)
 void update_gameplay_screen(void)
 {
     process_input(&_camera, GetFrameTime());
-    economy_update(_game.economy, GetFrameTime());
+    world_update(_game.world, GetFrameTime());
 
     if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
-        TraceLog(LOG_INFO, economy_get_tile_info(_game.economy,  
+        TraceLog(LOG_INFO, world_get_tile_info(_game.world,  
             _game.cursor.hex.q, _game.cursor.hex.r));
     }
 
@@ -209,12 +203,12 @@ void update_gameplay_screen(void)
 
 }
 
-void draw_tile(Tile tile, int q, int r, Color color)
+void draw_tile(int type, int rotation, int q, int r, Color color)
 {
-    if (tile.type == -1) return;
+    if (type == -1) return;
     const Vector3 pos = pointy_hex_to_pixel(q, r, _size) + _origin;
-    DrawModelEx(g_buildings[_editor_tiles[tile.type*2 + 1]], 
-        pos, Vector3{ 0,1,0 }, 60.0f * tile.rotation, Vector3{ 1, 1, 1 }, WHITE);
+    DrawModelEx(g_buildings[_editor_tiles[type*2 + 1]], 
+        pos, Vector3{ 0,1,0 }, 60.0f * rotation, Vector3{ 1, 1, 1 }, WHITE);
 }
 
 // Gameplay Screen Draw logic
@@ -232,14 +226,16 @@ void draw_gameplay_screen(void)
     for (int q = 0; q < _board_size; ++q) {
         for (int r = 0; r < _board_size; ++r)
         {
-            draw_tile(_tiles[q][r], q, r, WHITE);
+            Tile* t = &_game.world->tiles[q * _game.world->max_r + r];
+            draw_tile(t->type, t->rotation, q, r, WHITE);
         }
     }
 
     const Vector3 pos  = pointy_hex_to_pixel(_game.cursor.hex.q, _game.cursor.hex.r, _size) + _origin;
 
     if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type == -1) {
-        draw_tile(_game.cursor.tile, _game.cursor.hex.q, _game.cursor.hex.r, Color(255, 255, 255, 128));
+        draw_tile(_game.cursor.tile.type, _game.cursor.tile.rotation, 
+            _game.cursor.hex.q, _game.cursor.hex.r, Color(255, 255, 255, 128));
     }
     else {
         DrawCubeWires(pos, 1, 1, 1, BLUE);
@@ -250,7 +246,7 @@ void draw_gameplay_screen(void)
 // Gameplay Screen Unload logic
 void unload_gameplay_screen(void)
 {
-    economy_destroy(_game.economy);
+    world_destroy(_game.world);
 }
 
 // Gameplay Screen should finish?
