@@ -29,11 +29,18 @@ struct Tile {
     float supplyMax[GOOD_COUNT] = { 0 };
 };
 
+struct Person {
+    int model_type;
+    int q;
+    int r;
+};
+
 struct World {
     int max_q;
     int max_r;
     int tile_count;
     Tile *tiles;
+
 };
 
 World* world_create(int board_max_q, int board_max_r);

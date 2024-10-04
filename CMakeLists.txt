@@ -27,12 +27,18 @@ FetchContent_Declare(
     FIND_PACKAGE_ARGS
 )
 
+FetchContent_Declare(
+    unity
+    GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+    FIND_PACKAGE_ARGS
+)
 
-FetchContent_MakeAvailable(raylib raygui)
+FetchContent_MakeAvailable(raylib raygui unity)
 
 # Our Project
 add_executable(${PROJECT_NAME})
 add_subdirectory(src)
+add_subdirectory(test)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})

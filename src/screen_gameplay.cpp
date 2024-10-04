@@ -53,10 +53,16 @@ enum Actions {
     ACTION_CURSOR_RIGHT = KEY_RIGHT,
     ACTION_CURSOR_UP = KEY_UP,
     ACTION_CURSOR_DOWN = KEY_DOWN,
-    ACTION_ROTATE_LEFT = KEY_E,
-    ACTION_ROTATE_RIGHT = KEY_Q,
+    ACTION_ROTATE_LEFT = KEY_I,
+    ACTION_NEXT_TILE = KEY_O,
+    ACTION_ROTATE_RIGHT = KEY_P,
+    ACTION_CAMERA_LEFT = KEY_A,
+    ACTION_CAMERA_RIGHT = KEY_D,
+    ACTION_CAMERA_UP = KEY_W,
+    ACTION_CAMERA_DOWN = KEY_S,
+    ACTION_CAMERA_ORBIT_CW = KEY_E,
+    ACTION_CAMERA_OBRIT_CCW = KEY_Q,
     ACTION_PLACE = KEY_SPACE,
-    ACTION_NEXT_TILE = KEY_W,
 };
 
 Camera3D _camera3D = { 0 };
@@ -121,7 +127,7 @@ void process_input(Camera3D* camera, float dt)
 {
     float change = GetMouseWheelMove();
     camera->fovy += change;
-    camera->fovy = Clamp(camera->fovy, 20, 80);
+    camera->fovy = Clamp(camera->fovy, 5, 40);
 
     Cursor cursor = _game.cursor;
 
@@ -151,7 +157,22 @@ void process_input(Camera3D* camera, float dt)
     case ACTION_PLACE:
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
         world_add_tile(_game.world, cursor.tile, cursor.hex.q, cursor.hex.r);
+        break;
     }
+
+    if (IsKeyDown(ACTION_CAMERA_LEFT))
+    {
+        Vector3 mov = Vector3(10, 0, 0) * GetFrameTime();
+        _camera3D.position += mov;
+        _camera3D.target += mov;
+    }
+    if (IsKeyDown(ACTION_CAMERA_RIGHT)) 
+    {
+        Vector3 mov = Vector3(-10, 0, 0) * GetFrameTime();
+        _camera3D.position += mov;
+        _camera3D.target += mov;
+    }
+
     if (_game.cursor.hex.q != cursor.hex.q || _game.cursor.hex.r != cursor.hex.r) {
         Vector3 coords = pointy_hex_to_pixel(cursor.hex.q, cursor.hex.r, 1.0f);
         TraceLog(LOG_INFO, "Cursor: %d/%d %f|%f|%f", cursor.hex.q, cursor.hex.r, coords.x, coords.y, coords.z);
@@ -174,7 +195,7 @@ void init_gameplay_screen(void)
     finishScreen = 0;
 
     _camera3D = Camera3D{ .position = Vector3 { 0, 10, 10}, .target = Vector3 {0,0,0}, .up = Vector3{0,1,0},
-        .fovy = 30.0f, .projection = CAMERA_PERSPECTIVE };
+        .fovy = 15.0f, .projection = CAMERA_PERSPECTIVE };
 
     _camera2D = { 0 };
     _camera2D.zoom = 1.0;
