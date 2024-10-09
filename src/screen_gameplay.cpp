@@ -42,6 +42,7 @@ static int finishScreen = 0;
 
 // Duplicated
 static int _editor_tiles[ECONOMY_TILE_COUNT * 2] = {
+    ECONOMY_TILE_GRASS, MODEL_BUILDING_GRASS,
     ECONOMY_TILE_FARM, MODEL_BUILDING_FARM,
     ECONOMY_TILE_HOUSE, MODEL_BUILDING_HOUSE,
     ECONOMY_TILE_FOREST, MODEL_BUILDING_FOREST,
@@ -62,7 +63,8 @@ enum Actions {
     ACTION_CAMERA_DOWN = KEY_S,
     ACTION_CAMERA_ORBIT_CW = KEY_E,
     ACTION_CAMERA_OBRIT_CCW = KEY_Q,
-    ACTION_PLACE = KEY_SPACE,
+    ACTION_PLACE_TILE = KEY_SPACE,
+    ACTION_PLACE_PERSON = KEY_Y,
 };
 
 Camera3D _camera3D = { 0 };
@@ -90,7 +92,6 @@ static Tile _tiles[_board_size][_board_size] = {0};
 
 static const float _size = 1.0f / sqrtf(3.0);
 static Vector3 _origin;
-
 
 Game _game;
 // For hex functions see https://www.redblobgames.com/grids/hexagons/
@@ -154,10 +155,17 @@ void process_input(Camera3D* camera, float dt)
     case ACTION_NEXT_TILE:
         cursor.tile.type = (cursor.tile.type + 1) % ECONOMY_TILE_COUNT;
         break;
-    case ACTION_PLACE:
+    case ACTION_PLACE_TILE:
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
         world_add_tile(_game.world, cursor.tile, cursor.hex.q, cursor.hex.r);
         break;
+    case ACTION_PLACE_PERSON:
+    {
+        Tile* t = world_get_tile(_game.world, cursor.hex.q, cursor.hex.r);
+        if (t->type == ECONOMY_TILE_GRASS) {
+            world_add_person(_game.world, MODEL_CHARACTER_FEMALE, cursor.hex.q, cursor.hex.r);
+        }
+    }
     }
 
     if (IsKeyDown(ACTION_CAMERA_LEFT))
@@ -200,7 +208,7 @@ void init_gameplay_screen(void)
     _camera2D = { 0 };
     _camera2D.zoom = 1.0;
 
-    _game.cursor.hex = Hex{ 0,0 };
+    _game.cursor.hex = Hex{ 3,3 };
     _game.cursor.tile.type = ECONOMY_TILE_FARM;
     _game.cursor.tile.rotation = 0;
 
@@ -220,6 +228,11 @@ void update_gameplay_screen(void)
 {
     process_input(&_camera3D, GetFrameTime());
     world_update(_game.world, GetFrameTime());
+
+    // Update Model animations
+    //int anim = 2;
+
+    //frame_count = (frame_count + 1) % animations[anim].frameCount;
 
     //if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
     //    TraceLog(LOG_INFO, world_get_tile_info(_game.world,  
@@ -263,8 +276,27 @@ void draw_tile(int type, int rotation, int q, int r, Color color)
 {
     if (type == -1) return;
     const Vector3 pos = pointy_hex_to_pixel(q, r, _size) + _origin;
-    DrawModelEx(g_buildings[_editor_tiles[type*2 + 1]], 
+    DrawModelEx(g_models[_editor_tiles[type*2 + 1]], 
         pos, Vector3{ 0,1,0 }, 60.0f * rotation, Vector3{ 1, 1, 1 }, WHITE);
+}
+
+void gameplay_screen_draw_hud() {
+    BeginMode2D(_camera2D);
+
+    Vector3 anchor{ 20,20 };
+    const float width = 10.0f;
+    const float height = 10.0f;
+
+    static bool show_info = false;
+    GuiCheckBox(Rectangle{ .x = 20, .y = 20, .width = width, .height = height }, "Show Info", &show_info);
+    
+    const Vector3 pos = pointy_hex_to_pixel(_game.cursor.hex.q, _game.cursor.hex.r, _size) + _origin;
+
+    if (show_info && _tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
+        draw_hud_tile_info(pos, _game.cursor.hex.q, _game.cursor.hex.r);
+    }
+
+    EndMode2D();
 }
 
 // Gameplay Screen Draw logic
@@ -287,6 +319,12 @@ void draw_gameplay_screen(void)
         }
     }
 
+    for (int i = 0; i < _game.world->people_count; ++i) {
+        Person* p = &_game.world->people[i];
+        Vector3 pos = pointy_hex_to_pixel(p->q, p->r, _size);
+        DrawModel(g_models[p->model_type], _origin + pos + p->tile_pos , .3, WHITE);
+    }
+
     const Vector3 pos  = pointy_hex_to_pixel(_game.cursor.hex.q, _game.cursor.hex.r, _size) + _origin;
 
     if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type == -1) {
@@ -296,15 +334,11 @@ void draw_gameplay_screen(void)
     else {
         DrawCubeWires(pos, 1, 1, 1, BLUE);
     }
+
+
     EndMode3D();
     // Draw the HUB on top of the game screen
-    BeginMode2D(_camera2D);
-
-    if (_tiles[_game.cursor.hex.q][_game.cursor.hex.r].type != -1) {
-        draw_hud_tile_info(pos, _game.cursor.hex.q, _game.cursor.hex.r);
-    }
-
-    EndMode2D();
+    gameplay_screen_draw_hud();
 }
 
 // Gameplay Screen Unload logic

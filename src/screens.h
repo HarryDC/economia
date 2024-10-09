@@ -44,7 +44,7 @@ extern Font font;
 extern Music music;
 extern Sound fxCoin;
 
-extern Model *g_buildings;
+extern Model *g_models;
 
 #ifdef __cplusplus
 extern "C" {            // Prevents name mangling of functions

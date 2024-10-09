@@ -14,10 +14,12 @@
 
 #include <stdlib.h>
 
-static const char* _building_names[MODEL_BUILDING_COUNT] = {
-"building-farm.glb",
-"building-house.glb",
-"grass-forest.glb",
+static const char* _model_names[MODEL_COUNT] = {
+"hex/grass.glb",
+"hex/building-farm.glb",
+"hex/building-house.glb",
+"hex/grass-forest.glb",
+"people/character-female-f.glb"
 };
 
 static const char* resource_dir = "resources/";
@@ -59,9 +61,9 @@ Model* models_load(const char** names, const int count) {
     char buffer[1024];
     
     for (int i = 0; i < count; ++i) {
-        const char* filename = TextFormat("resources/hex/%s", names[i]);
+        const char* filename = TextFormat("resources/%s", names[i]);
         result[i] = LoadModel(filename);
-        for (int mat = 0; mat < result[i].materialCount; ++mat) {
+        for (int mat = 1; mat < result[i].materialCount; ++mat) {
             result[i].materials[mat].shader = _lit_shader;
         }
     }
@@ -74,9 +76,9 @@ void models_unload(Model* models, const int count) {
     }
 }
 
-Model* models_load_buildings()
+Model* models_load_all()
 {
-    return models_load(_building_names, MODEL_BUILDING_COUNT);
+    return models_load(_model_names, MODEL_COUNT);
 }
 
 

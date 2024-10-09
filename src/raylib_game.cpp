@@ -35,7 +35,7 @@ Font font = { 0 };
 Music music = { 0 };
 Sound fxCoin = { 0 };
 
-Model *g_buildings;
+Model *g_models;
 
 //----------------------------------------------------------------------------------
 // Local Variables Definition (local to this module)
@@ -79,7 +79,7 @@ int main(void)
 
     InitAudioDevice();      // Initialize audio device
 
-    g_buildings = models_load_buildings();
+    g_models = models_load_all();
 
     // Load global data (assets that must be available in all screens, i.e. font)
     // font = LoadFont("resources/mecha.png");

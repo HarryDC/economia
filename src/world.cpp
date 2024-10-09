@@ -1,8 +1,7 @@
+#include "raylib.h"
+
 #include "world.hpp"
 #include "assets.hpp"
-
-#include "raylib.h"
-#include "raymath.h"
 
 #include <stdlib.h>
 
@@ -112,9 +111,32 @@ void world_add_tile(World* world, Tile tile, int q, int r)
     }
     case (ECONOMY_TILE_HOUSE): {
         t->model_type = MODEL_BUILDING_HOUSE;
-        // Add a person 
+        // Increase Space for people
+        break;
+    }
+    case (ECONOMY_TILE_GRASS): {
+        t->model_type = MODEL_BUILDING_GRASS;
+        break;
     }
     }
+}
+
+void world_add_person(World* world, int type, int q, int r)
+{
+    Tile* t = world_get_tile(world, q, r);
+    if (t->type == ECONOMY_TILE_NONE) {
+        TraceLog(LOG_WARNING, "Trying to add person on empty spot %d/%d", q, r);
+        return;
+    }
+    if (world->people_count <= PEOPLE_MAX) {
+        Person* p = &world->people[world->people_count];
+        *p = Person{ .model_type = type, .q = q, .r = r, .tile_pos = Vector3{0,.25f,0} };
+        ++world->people_count;
+    }
+    else {
+        TraceLog(LOG_WARNING, "Exceeded maximum number of people (%d)", PEOPLE_MAX);
+    }
+    
 }
 
 void tile_clear(Tile* tile) {
