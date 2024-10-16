@@ -98,27 +98,43 @@ void world_add_tile(World* world, Tile tile, int q, int r)
 
     switch (t->type) {
     case (ECONOMY_TILE_FARM): {
+        TraceLog(LOG_INFO, "Farm placed at %d/%d", q, r);
         t->model_type = MODEL_BUILDING_FARM;
         t->production[GOOD_WHEAT] = 1.0;
         t->supplyMax[GOOD_WHEAT] = 100.0;
         break;
     }
     case (ECONOMY_TILE_FOREST): {
+        TraceLog(LOG_INFO, "Forest placed at %d/%d", q, r);
         t->model_type = MODEL_BUILDING_FOREST;
         t->production[GOOD_WOOD] = 1.0;
         t->supplyMax[GOOD_WOOD] = 100.0;
         break;
     }
     case (ECONOMY_TILE_HOUSE): {
+        TraceLog(LOG_INFO, "House placed at %d/%d", q, r);
         t->model_type = MODEL_BUILDING_HOUSE;
         // Increase Space for people
         break;
     }
     case (ECONOMY_TILE_GRASS): {
+        TraceLog(LOG_INFO, "Grasslands placed at %d/%d", q, r);
         t->model_type = MODEL_BUILDING_GRASS;
         break;
     }
     }
+}
+
+/// Returns the first person found that has the give address
+/// will return nullptr if no person is found
+Person* world_get_person(World* w, int q, int r)
+{
+    for (int i = 0; i < w->people_count; ++i) {
+        if (w->people[i].q == q && w->people[i].r == r) {
+            return &w->people[i];
+        }
+    }
+    return nullptr;
 }
 
 void world_add_person(World* world, int type, int q, int r)

@@ -77,6 +77,8 @@ void draw_options_screen(void);
 void unload_options_screen(void);
 int finish_options_screen(void);
 
+void process_input(Camera3D* camera, float dt);
+
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Declaration
 //----------------------------------------------------------------------------------

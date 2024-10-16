@@ -64,7 +64,9 @@ enum Actions {
     ACTION_CAMERA_ORBIT_CW = KEY_E,
     ACTION_CAMERA_OBRIT_CCW = KEY_Q,
     ACTION_PLACE_TILE = KEY_SPACE,
-    ACTION_PLACE_PERSON = KEY_Y,
+    ACTION_PERSON_PLACE = KEY_Y,
+    ACTION_PERSON_SELECT = KEY_H,
+    ACTION_PERSON_MOVE = KEY_M,
 };
 
 Camera3D _camera3D = { 0 };
@@ -84,7 +86,8 @@ struct Cursor {
 struct Game {
     float dt;
     Cursor cursor;
-    World* world;
+    World* world = nullptr;
+    Person* selected_person = nullptr;
 };
 
 static constexpr int _board_size = 7;
@@ -159,12 +162,33 @@ void process_input(Camera3D* camera, float dt)
         _tiles[cursor.hex.q][cursor.hex.r] = cursor.tile;
         world_add_tile(_game.world, cursor.tile, cursor.hex.q, cursor.hex.r);
         break;
-    case ACTION_PLACE_PERSON:
+    case ACTION_PERSON_PLACE:
     {
+        TraceLog(LOG_INFO, "Person dropped");
         Tile* t = world_get_tile(_game.world, cursor.hex.q, cursor.hex.r);
         if (t->type == ECONOMY_TILE_GRASS) {
             world_add_person(_game.world, MODEL_CHARACTER_FEMALE, cursor.hex.q, cursor.hex.r);
         }
+        break;
+    }
+    case ACTION_PERSON_SELECT:
+    {
+        TraceLog(LOG_INFO, "Person Selected");
+        Person* p = world_get_person(_game.world, cursor.hex.q, cursor.hex.r);
+        if (p != nullptr) {
+            _game.selected_person = p;
+        }
+        break;
+    }
+    case ACTION_PERSON_MOVE:
+    {
+        // TODO Check if there is room 
+        // TODO Path planning to actually animate moving 
+        if (_game.selected_person != nullptr) {
+            _game.selected_person->q = cursor.hex.q;
+            _game.selected_person->r = cursor.hex.r;
+        }
+        break;
     }
     }
 
@@ -183,10 +207,8 @@ void process_input(Camera3D* camera, float dt)
 
     if (_game.cursor.hex.q != cursor.hex.q || _game.cursor.hex.r != cursor.hex.r) {
         Vector3 coords = pointy_hex_to_pixel(cursor.hex.q, cursor.hex.r, 1.0f);
-        TraceLog(LOG_INFO, "Cursor: %d/%d %f|%f|%f", cursor.hex.q, cursor.hex.r, coords.x, coords.y, coords.z);
-        
+        TraceLog(LOG_DEBUG, "Cursor: %d/%d %f|%f|%f", cursor.hex.q, cursor.hex.r, coords.x, coords.y, coords.z);
     }
-    
     _game.cursor = cursor;
 }
 
@@ -269,6 +291,9 @@ void draw_hud_tile_info(Vector3 pos, int q, int r) {
         TextAppend(buffer, TextFormat("/%d", (int)t->supply[i]), &end);
     }
     rect.y += 15; // Panel bar
+    GuiSetStyle(TEXTBOX, TEXT_ALIGNMENT_VERTICAL, TEXT_ALIGN_TOP);   // WARNING: Word-wrap does not work as expected in case of no-top alignment
+    GuiSetStyle(TEXTBOX, TEXT_WRAP_MODE, TEXT_WRAP_WORD);            // WARNING: If wrap mode enabled, text editing is not supported
+    GuiSetStyle(TEXTBOX, BORDER_WIDTH, 0);
     GuiTextBox(rect, buffer, 12, false);
 }
 
@@ -283,12 +308,14 @@ void draw_tile(int type, int rotation, int q, int r, Color color)
 void gameplay_screen_draw_hud() {
     BeginMode2D(_camera2D);
 
-    Vector3 anchor{ 20,20 };
+    Vector3 gui_pos{ 20,20 };
     const float width = 10.0f;
     const float height = 10.0f;
 
+    GuiPanel(Rectangle{ .x = gui_pos.x, .y = gui_pos.y, .width = 200, .height = 200 }, "Settings");
+
     static bool show_info = false;
-    GuiCheckBox(Rectangle{ .x = 20, .y = 20, .width = width, .height = height }, "Show Info", &show_info);
+    GuiCheckBox(Rectangle{ .x = 30, .y = 50, .width = width, .height = height }, "Show Info", &show_info);
     
     const Vector3 pos = pointy_hex_to_pixel(_game.cursor.hex.q, _game.cursor.hex.r, _size) + _origin;
 
@@ -305,7 +332,6 @@ void draw_gameplay_screen(void)
     static int counts[7] = { 4,5,6,7,6,5,4 };
     static int q_start[7] = { 0, -1, -2, -3, -3, -3, -3 };
     int r = -3;
-
 
     // TODO: Draw GAMEPLAY screen here!
     //DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), PURPLE);

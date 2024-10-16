@@ -58,5 +58,6 @@ Tile* world_get_tile(World* w, int q, int r);
 const char* world_get_tile_info(World* e, int q, int r);
 void world_update(World* world, float dt);
 void world_add_tile(World* world, Tile tile, int q, int r);
+Person* world_get_person(World* w, int q, int r);
 
 void world_add_person(World* world, int type, int q, int r);
